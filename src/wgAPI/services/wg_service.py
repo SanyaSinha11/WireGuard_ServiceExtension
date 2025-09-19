@@ -108,3 +108,4 @@ class WGService:
             return {"status": "success", "message": f"Peer {public_key} removed"}
         except Exception as e:
             return {"status": "error", "message": str(e)}
+
