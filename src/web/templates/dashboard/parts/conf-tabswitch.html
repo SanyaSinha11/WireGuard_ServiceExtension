@@ -1,0 +1,53 @@
+<div
+  class="grid grid-cols-4 border bg-gray-200 mb-4"
+  style="border-radius: 48px"
+>
+  <!-- Interface Tab -->
+  <button
+    hx-get="/server-config/interface"
+    hx-target="#configuration-content"
+    hx-swap="innerHTML"
+    class="tab-btn bg-white rounded flex items-center justify-center gap-2  p-1"
+    style="border-radius: 48px"
+    data-tab="interface"
+  >
+    <i class="fas fa-cog"></i> Interface
+  </button>
+
+  <!-- Network Settings Tab -->
+  <button
+    hx-get="/server-config/network"
+    hx-target="#configuration-content"
+    hx-swap="innerHTML"
+    class="tab-btn rounded flex items-center justify-center gap-2  "
+    style="border-radius: 48px"
+    data-tab="network"
+  >
+    <i class="fas fa-network-wired"></i> Network Settings
+  </button>
+
+  <!-- Security Tab -->
+  <button
+    hx-get="/server-config/security"
+    hx-target="#configuration-content"
+    hx-swap="innerHTML"
+    class="tab-btn rounded flex items-center justify-center gap-2  "
+    style="border-radius: 48px"
+    data-tab="security"
+  >
+    <i class="fa-solid fa-lock"></i> Security 
+  </button> 
+
+  <!-- Advance Script Tab -->
+  <button
+    hx-get="/server-config/advanced"
+    hx-target="#configuration-content"
+    hx-swap="innerHTML"
+    class="tab-btn rounded flex items-center justify-center gap-2  "
+    style="border-radius: 48px"
+    data-tab="advanced"
+  >
+    <i class="fa-solid fa-code"></i> Advanced Scripts
+  </button>
+
+</div>

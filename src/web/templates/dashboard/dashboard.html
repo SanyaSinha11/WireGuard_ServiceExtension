@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="flex h-screen">
+  {% include 'sidebar.html' %}
+  <!-- Main Content -->
+  <main
+    class="flex-1 flex flex-col m-3 bg-white shadow-lg rounded-lg overflow-hidden"
+  >
+    {% include 'header.html' %}
+
+    <!-- Server Config Section -->
+    <div class="p-4">
+      <h2 class="text-2xl font-bold mb-2">Server Configuration</h2>
+      <p class="text-gray-600 mb-2">
+        Configure your WireGuard interface settings and network options
+      </p>
+
+      {% include 'dashboard/parts/conf-tabswitch.html' %}
+
+      <!-- Dynamic content area -->
+      <div id="configuration-content" class="mb-4">
+        {% include 'dashboard/configuration/interface.html' %}
+      </div>
+    </div>
+  </main>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/htmx.org@1.9.12"></script>
+
+<script>
+  // Listen for HTMX tab switches
+  document.addEventListener("htmx:beforeRequest", function(evt) {
+    // Reset all buttons
+    document.querySelectorAll(".tab-btn").forEach(btn => {
+      btn.classList.remove("bg-white");
+      btn.classList.add("bg-gray-200");
+    });
+
+    // Highlight clicked tab
+    evt.target.classList.add("bg-white");
+    evt.target.classList.remove("bg-gray-200");
+  });
+</script>
+{% endblock %}
