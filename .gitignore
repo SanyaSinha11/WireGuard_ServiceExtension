@@ -1,0 +1,8 @@
+test.html
+__pycache__/
+**/__pycache__/
+temp/
+**/temp/
+*.log
+*.pot
+**/*.pyc
