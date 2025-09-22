@@ -5,9 +5,9 @@ import threading
 import signal
 import sys
 
-from valDaemon.handlers.interface_handler import handle_create, handle_delete, handle_list
-from valDaemon.handlers.peer_handler import handle_list as peers_list, handle_add, handle_remove
-from valDaemon.handlers.key_handler import handle_gen_keys
+from daemon.handlers.interface_handler import handle_create, handle_delete, handle_list
+from daemon.handlers.peer_handler import handle_list as peers_list, handle_add, handle_remove
+from daemon.handlers.key_handler import handle_gen_keys
 
 DEFAULT_SOCKET = "/run/valdaemon.sock"
 FALLBACK_SOCKET = "/tmp/valdaemon.sock"

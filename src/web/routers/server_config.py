@@ -7,7 +7,7 @@ templates = Jinja2Templates(directory="templates")
 
 @router.get("/", response_class=HTMLResponse)
 async def dashboard(request: Request):
-    return templates.TemplateResponse("dashboard/dashboard.html", {"request": request})
+    return templates.TemplateResponse("dashboard/server-conf.html", {"request": request})
 
 @router.get("/interface", response_class=HTMLResponse)
 async def config_interface(request: Request):
@@ -20,3 +20,7 @@ async def config_network(request: Request):
 @router.get("/security", response_class=HTMLResponse)
 async def config_security(request: Request):
     return templates.TemplateResponse("dashboard/configuration/security.html", {"request": request})
+
+@router.get("/advanced", response_class=HTMLResponse)
+async def config_security(request: Request):
+    return templates.TemplateResponse("dashboard/configuration/advanced.html", {"request": request})

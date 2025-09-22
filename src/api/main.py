@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from valAPI.routes import interface, peers
+from api.routes import interface, peers
 
 app = FastAPI(title="ValAPI (REST) - WireGuard extension",
               description="REST endpoints that forward commands to valDaemon via a Unix socket.",

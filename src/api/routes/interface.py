@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
-from valAPI.clients.daemon_client import send
+from api.clients.daemon_client import send
 
 router = APIRouter(prefix="/interface", tags=["Interface"])
 

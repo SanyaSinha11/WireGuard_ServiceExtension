@@ -1,0 +1,82 @@
+{% extends "base.html" %} {% block content %}
+<div class="flex h-screen">
+  {% include 'sidebar.html' %}
+  <!-- Main Content -->
+  <main
+    class="flex-1 flex flex-col m-3 bg-white shadow-lg rounded-lg overflow-hidden"
+  >
+    {% include 'header.html' %}
+
+    <!-- Server Config Section -->
+    <div class="p-4">
+      <h2 class="text-2xl font-bold mb-2">Server Configuration</h2>
+      <p class="text-gray-600 mb-2">
+        Configure your WireGuard interface settings and network options
+      </p>
+      <div class="flex flex-col   mb-4 p-4">
+
+ <!-- Interface Management -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center border p-5 rounded-lg mb-6 bg-white shadow-sm gap-4">
+  
+  <!-- Left section: Icon, title, select -->
+  <div class="flex flex-col">
+    <div class="flex items-center gap-2 text-gray-800 text-md  mb-2">
+      <i class="fa-solid fa-desktop"></i>
+      Interface Management
+    </div>
+
+    <select
+      id="interfaceSelect"
+      name="interfaceSelect"
+      class="w-full md:w-64 border border-gray-300 rounded-md px-3 py-2 text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+    >
+      <option value="" disabled selected>Select Interface</option>
+      <option value="option1">Option 1</option>
+      <option value="option2">Option 2</option>
+      <option value="option3">Option 3</option>
+    </select>
+  </div>
+
+  <!-- Right section: Save button -->
+  <div class="flex-shrink-0">
+    <button
+      class="flex items-center gap-2 border text-black hover:bg-gray-50 px-4 py-2 rounded-md text-sm font-medium"
+    >
+      <i class="fa-solid fa-plus"></i>
+      Add Interface
+    </button>
+  </div>
+</div>
+
+      {% include 'dashboard/parts/conf-tabswitch.html' %}
+
+      <!-- Dynamic content area -->
+      <div id="configuration-content" >
+        {% include 'dashboard/configuration/interface.html' %}
+      </div>
+      {% include 'dashboard/parts/dangerZone.html' %}
+    </div>
+
+
+    
+  </main>
+</div>
+{% endblock %} {% block scripts %}
+<script src="https://unpkg.com/htmx.org@1.9.12"></script>
+<script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+
+<script>
+  // Listen for HTMX tab switches
+  document.addEventListener("htmx:beforeRequest", function (evt) {
+    // Reset all buttons
+    document.querySelectorAll(".tab-btn").forEach((btn) => {
+      btn.classList.remove("bg-white");
+      btn.classList.add("bg-gray-200");
+    });
+
+    // Highlight clicked tab
+    evt.target.classList.add("bg-white");
+    evt.target.classList.remove("bg-gray-200");
+  });
+</script>
+{% endblock %}
