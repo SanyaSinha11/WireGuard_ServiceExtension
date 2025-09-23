@@ -2,10 +2,10 @@
               <!-- Interface Config -->
               <div class="bg-white rounded-lg border shadow p-5 space-y-4 mb-4">
                 <div class="flex flex-row justify-between align-middle">
-                  <h2 class="font-semibold"><i class="fa-solid fa-server"></i>Interface Configuration - wg0</h2>
+                  <h2 class=""><i class="fa-solid fa-server"></i>Interface Configuration</h2>
                   <div>
                     <button
-                      class="mt-3 bg-red-600 text-white px-4 py-2 rounded-md text-sm"
+                      class="mt-3 border border-red-600 text-red-600 px-4 py-2 rounded-md text-sm "
                     >
                       <i class="fa-solid fa-arrows-rotate"></i> Reset Interface
                     </button>
@@ -25,7 +25,7 @@
                     <input
                       type="text"
                       value="wg0"
-                      class="w-full border rounded-md px-3 py-2 text-sm"
+                      class="w-full border rounded-md px-3 py-2 text-sm bg-gray-100"
                       readonly
                     />
                   </div>
@@ -34,23 +34,27 @@
                     <input
                       type="text"
                       value="51820"
-                      class="w-full border rounded-md px-3 py-2 text-sm"
+                      class="w-full border rounded-md px-3 py-2 text-sm bg-gray-100"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label class="text-sm text-gray-600">Private Key</label>
-                  <div class="flex gap-2">
+                  
+                  <div class="flex justify-between items-center mb-1">
+                    <label class="text-sm text-gray-600">Private Key</label>
+                  
+                    <button class="px-3 py-2 border rounded-md text-sm"> <i class="fa-solid fa-key"></i>
+                      Generate New Key
+                    </button>
+
+                  </div>
                     <input
                       type="password"
                       value="*********************************"
-                      class="w-full border rounded-md px-3 py-2 text-sm"
+                      class="w-full border rounded-md px-3 py-2 text-sm bg-gray-100"
+                      disabled
                     />
-                    <button class="px-3 py-2 border rounded-md text-sm">
-                      Generate New Key
-                    </button>
-                  </div>
                 </div>
 
                 <div class="grid md:grid-cols-2 gap-4">
@@ -59,7 +63,7 @@
                     <input
                       type="text"
                       value="10.0.0.1/24"
-                      class="w-full border rounded-md px-3 py-2 text-sm"
+                      class="w-full border rounded-md px-3 py-2 text-sm bg-gray-100"
                     />
                   </div>
                   <div>
@@ -67,7 +71,7 @@
                     <input
                       type="text"
                       value="1420"
-                      class="w-full border rounded-md px-3 py-2 text-sm"
+                      class="w-full border rounded-md px-3 py-2 text-sm bg-gray-100"
                     />
                   </div>
                 </div>
@@ -79,7 +83,7 @@
                   <input
                     type="text"
                     value="1.1.1.1, 8.8.8.8"
-                    class="w-full border rounded-md px-3 py-2 text-sm"
+                    class="w-full border rounded-md px-3 py-2 text-sm bg-gray-100"
                   />
                 </div>
               </div>

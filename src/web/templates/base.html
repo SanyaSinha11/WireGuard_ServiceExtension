@@ -1,13 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
-  {% include 'head.html' %}
-  <body class="text-gray-900 font-sans bg-gray-100">
-   
-        <!-- Sidebar -->
-      
-         {% block content %}{% endblock %}
-
+<head>
+    {% include 'head.html' %}
+    <style>
+        body {
+            font-family: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+        }
+    </style>
+</head>
+<body class="text-gray-900 font-sans bg-gray-100">
+    <!-- Sidebar or Navigation could go here -->
+    
+    <div class="main-content">
+        {% block content %}
+        {% endblock %}
     </div>
-    {% block scripts %}{% endblock %}
-  </body>
+
+    {% block scripts %}
+    {% endblock %}
+</body>
 </html>

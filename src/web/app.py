@@ -3,7 +3,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from routers import server_config  # import the router
+from routers import server_config,api_proxy  # import the router
 
 app = FastAPI()
 
@@ -16,7 +16,11 @@ templates = Jinja2Templates(directory="templates")
 # Root route
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
-    return templates.TemplateResponse("login.html", {"request": request})
+    return templates.TemplateResponse("authentication/login.html", {"request": request})
 
 # Include server config router with prefix
 app.include_router(server_config.router, prefix="/server-config", tags=["Server Configurations"])
+
+
+# Include API proxy router - this hides the backend API from frontend clients
+app.include_router(api_proxy.router, tags=["Frontend API Proxy"])
