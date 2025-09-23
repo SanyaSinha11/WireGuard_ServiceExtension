@@ -9,8 +9,8 @@ from daemon.handlers.interface_handler import handle_create, handle_delete, hand
 from daemon.handlers.peer_handler import handle_list as peers_list, handle_add, handle_remove
 from daemon.handlers.key_handler import handle_gen_keys
 
-DEFAULT_SOCKET = "/run/valdaemon.sock"
-FALLBACK_SOCKET = "/tmp/valdaemon.sock"
+DEFAULT_SOCKET = "/run/daemon.sock"
+FALLBACK_SOCKET = "/tmp/daemon.sock"
 
 class SocketDaemon:
     def __init__(self, socket_path=None):
@@ -29,14 +29,19 @@ class SocketDaemon:
         server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         server.bind(self.socket_path)
         try:
-            os.chmod(self.socket_path, 0o660)
-        except Exception:
-            pass
+            # root socket: allow user/group; non-root: allow everyone
+            if os.geteuid() == 0:
+                os.chmod(self.socket_path, 0o660)  # safe default for root
+            else:
+                os.chmod(self.socket_path, 0o666)  # let other users connect
+        except Exception as e:
+            print(f"[daemon] chmod failed: {e}")
 
         server.listen(5)
         self.server = server
         self.running = True
-        print(f"[valDaemon] Listening on {self.socket_path} (pid {os.getpid()})")
+        print(f"[daemon] Listening on {self.socket_path} (pid {os.getpid()})")
+
         try:
             while self.running:
                 try:
@@ -55,15 +60,18 @@ class SocketDaemon:
                 if not chunk:
                     break
                 raw += chunk
-            if not raw:
+                # stop at newline (one JSON per line)
+                if b"\n" in raw:
+                    break
+
+            if not raw.strip():
                 conn.send(b'{"status":"error","message":"empty request"}')
-                conn.close()
                 return
+
             try:
-                payload = json.loads(raw.decode("utf-8"))
+                payload = json.loads(raw.decode("utf-8").strip())
             except Exception as e:
                 conn.send(json.dumps({"status":"error","message":f"invalid json: {e}"}).encode("utf-8"))
-                conn.close()
                 return
 
             action = payload.get("action")
@@ -93,7 +101,7 @@ class SocketDaemon:
             else:
                 out = {"status":"error", "message": f"unknown action: {action}"}
 
-            conn.send(json.dumps(out).encode("utf-8"))
+            conn.send((json.dumps(out) + "\n").encode("utf-8"))
         except Exception as e:
             try:
                 conn.send(json.dumps({"status":"error","message":f"server error: {e}"}).encode("utf-8"))

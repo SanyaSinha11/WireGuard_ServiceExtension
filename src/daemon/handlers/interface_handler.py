@@ -1,4 +1,4 @@
-from valDaemon.utils.wg_service import create_interface, delete_interface, list_interfaces
+from daemon.utils.wg_service import create_interface, delete_interface, list_interfaces
 
 def handle_create(interface_name: str = "wg0"):
     return create_interface(interface_name)

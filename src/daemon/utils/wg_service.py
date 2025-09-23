@@ -7,10 +7,6 @@ def _is_root() -> bool:
     return os.geteuid() == 0
 
 def _run_cmd(cmd: List[str]) -> Dict[str, Any]:
-    """
-    Run a command. If not root and sudo exists, prefix with sudo.
-    Returns dict with status, stdout/stderr.
-    """
     prefix = []
     if not _is_root():
         if shutil.which("sudo"):
@@ -20,18 +16,22 @@ def _run_cmd(cmd: List[str]) -> Dict[str, Any]:
     try:
         proc = subprocess.run(prefix + cmd, capture_output=True, text=True)
     except Exception as e:
-        return {"status": "error", "message": f"Failed to run {prefix + cmd}: {e}"}
+        return {"status": "error", "message": f"Failed to run {cmd}: {e}"}
 
     if proc.returncode != 0:
         return {
             "status": "error",
             "message": f"Command failed: {' '.join(prefix + cmd)}",
-            "stdout": proc.stdout,
-            "stderr": proc.stderr,
+            "stdout": proc.stdout.strip(),
+            "stderr": proc.stderr.strip(),
             "rc": proc.returncode
         }
-    return {"status": "success", "stdout": proc.stdout, "stderr": proc.stderr, "rc": proc.returncode}
-
+    return {
+        "status": "success",
+        "stdout": proc.stdout.strip(),
+        "stderr": proc.stderr.strip(),
+        "rc": proc.returncode
+    }
 
 # ----------------------------
 # Interface functions

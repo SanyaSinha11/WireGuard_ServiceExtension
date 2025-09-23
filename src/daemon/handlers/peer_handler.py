@@ -1,4 +1,4 @@
-from valDaemon.utils.wg_service import add_peer, remove_peer, list_peers
+from daemon.utils.wg_service import add_peer, remove_peer, list_peers
 
 def handle_list(iface: str = "wg0"):
     return list_peers(iface)
