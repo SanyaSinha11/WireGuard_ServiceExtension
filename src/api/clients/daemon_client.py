@@ -3,8 +3,8 @@ import json
 import os
 from typing import Dict, Any
 
-DEFAULT_SOCKET = os.environ.get("DAEMON_SOCKET", "/run/daemon.sock")
-FALLBACK_SOCKET = "/tmp/daemon.sock"
+DEFAULT_SOCKET = os.environ.get("DAEMON_SOCKET", "/run/wg.daemon.sock")
+FALLBACK_SOCKET = "/tmp/wg.daemon.sock"
 
 
 def _choose_socket() -> str:
@@ -25,6 +25,7 @@ def send(payload: Dict[str, Any], socket_path: str = None, timeout: float = 5.0)
         client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         client.settimeout(timeout)
         client.connect(path)
+        print(client)
     except FileNotFoundError:
         return {"status": "error", "message": f"Socket not found at {path}. Is Daemon running?"}
     except PermissionError:

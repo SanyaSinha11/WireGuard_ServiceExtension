@@ -1,53 +1,27 @@
-<div
-  class="grid grid-cols-4 border bg-gray-200 mb-4"
-  style="border-radius: 48px"
->
+<div class="grid grid-cols-4 border bg-gray-200 mb-4" style="border-radius: 48px">
   <!-- Interface Tab -->
-  <button
-    hx-get="/server-config/interface"
-    hx-target="#configuration-content"
-    hx-swap="innerHTML"
-    class="tab-btn bg-white rounded flex items-center justify-center gap-2  p-1"
-    style="border-radius: 48px"
-    data-tab="interface"
-  >
-     Interface
+  <button hx-get="/server-config/interface" hx-target="#configuration-content" hx-swap="innerHTML"
+    class="tab-btn bg-white rounded flex items-center justify-center gap-2  p-1" style="border-radius: 48px"
+    data-tab="interface">
+    Interface
   </button>
 
   <!-- Network Settings Tab -->
-  <button
-    hx-get="/server-config/network"
-    hx-target="#configuration-content"
-    hx-swap="innerHTML"
-    class="tab-btn rounded flex items-center justify-center gap-2  "
-    style="border-radius: 48px"
-    data-tab="network"
-  >
-    Network 
+  <button hx-get="/server-config/network" hx-target="#configuration-content" hx-swap="innerHTML"
+    class="tab-btn rounded flex items-center justify-center gap-2  " style="border-radius: 48px" data-tab="network">
+    Network
   </button>
 
   <!-- Security Tab -->
-  <button
-    hx-get="/server-config/security"
-    hx-target="#configuration-content"
-    hx-swap="innerHTML"
-    class="tab-btn rounded flex items-center justify-center gap-2  "
-    style="border-radius: 48px"
-    data-tab="security"
-  >
-   Security 
-  </button> 
+  <button hx-get="/server-config/security" hx-target="#configuration-content" hx-swap="innerHTML"
+    class="tab-btn rounded flex items-center justify-center gap-2  " style="border-radius: 48px" data-tab="security">
+    Security
+  </button>
 
   <!-- Advance Script Tab -->
-  <button
-    hx-get="/server-config/advanced"
-    hx-target="#configuration-content"
-    hx-swap="innerHTML"
-    class="tab-btn rounded flex items-center justify-center gap-2  "
-    style="border-radius: 48px"
-    data-tab="advanced"
-  >
-Advanced 
+  <button hx-get="/server-config/advanced" hx-target="#configuration-content" hx-swap="innerHTML"
+    class="tab-btn rounded flex items-center justify-center gap-2  " style="border-radius: 48px" data-tab="advanced">
+    Advanced
   </button>
 
 </div>

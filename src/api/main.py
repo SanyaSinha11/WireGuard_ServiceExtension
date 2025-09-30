@@ -17,6 +17,7 @@ def root():
     """
     # Send a simple "list_interfaces" action as health check
     resp = send({"action": "list_interfaces"}, timeout=2.0)
+    print(resp)
     if resp.get("status") == "success":
         return {
             "message": "ValGuard API running. Daemon is reachable.",

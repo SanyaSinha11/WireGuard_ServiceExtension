@@ -4,22 +4,33 @@ import socket
 import threading
 import signal
 import sys
+from concurrent.futures import ThreadPoolExecutor
 
 from daemon.handlers.interface_handler import handle_create, handle_delete, handle_list
 from daemon.handlers.peer_handler import handle_list as peers_list, handle_add, handle_remove
 from daemon.handlers.key_handler import handle_gen_keys
 
-DEFAULT_SOCKET = "/run/daemon.sock"
-FALLBACK_SOCKET = "/tmp/daemon.sock"
+DEFAULT_SOCKET = "/run/wg.daemon.sock"
+FALLBACK_SOCKET = "/tmp/wg.daemon.sock"
+
 
 class SocketDaemon:
-    def __init__(self, socket_path=None):
+    def __init__(self, socket_path=None, max_workers=10, permissive_for_nonroot=False):
         self.socket_path = socket_path or (DEFAULT_SOCKET if os.geteuid() == 0 else FALLBACK_SOCKET)
         self.server = None
         self.running = False
+        self.executor = ThreadPoolExecutor(max_workers=max_workers)
+        self.permissive_for_nonroot = permissive_for_nonroot
+
+    def confirm_ready(self):
+        """Confirm the daemon is built successfully by checking socket availability."""
+        if self.server and os.path.exists(self.socket_path):
+            print(f"[daemon] Build successful – socket ready at {self.socket_path}")
+            return True
+        print("[daemon] Build failed – socket not available")
+        return False
 
     def start(self):
-        # remove stale socket
         try:
             if os.path.exists(self.socket_path):
                 os.remove(self.socket_path)
@@ -27,13 +38,19 @@ class SocketDaemon:
             pass
 
         server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        server.bind(self.socket_path)
+        server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         try:
-            # root socket: allow user/group; non-root: allow everyone
+            server.bind(self.socket_path)
+        except Exception as e:
+            print(f"[daemon] bind failed: {e}")
+            raise
+
+        try:
             if os.geteuid() == 0:
-                os.chmod(self.socket_path, 0o660)  # safe default for root
+                mode = 0o660
             else:
-                os.chmod(self.socket_path, 0o666)  # let other users connect
+                mode = 0o666 if self.permissive_for_nonroot else 0o600
+            os.chmod(self.socket_path, mode)
         except Exception as e:
             print(f"[daemon] chmod failed: {e}")
 
@@ -42,69 +59,82 @@ class SocketDaemon:
         self.running = True
         print(f"[daemon] Listening on {self.socket_path} (pid {os.getpid()})")
 
+        # confirm daemon is ready
+        self.confirm_ready()
+
         try:
             while self.running:
                 try:
                     conn, _ = server.accept()
-                except KeyboardInterrupt:
+                except OSError:
                     break
-                threading.Thread(target=self.handle_conn, args=(conn,), daemon=True).start()
+                self.executor.submit(self.handle_conn, conn)
         finally:
             self.shutdown()
 
     def handle_conn(self, conn: socket.socket):
         try:
-            raw = b""
+            conn.settimeout(5.0)
+            buffer = b""
             while True:
-                chunk = conn.recv(65536)
+                try:
+                    chunk = conn.recv(65536)
+                except socket.timeout:
+                    if not buffer:
+                        break
+                    chunk = b""
                 if not chunk:
                     break
-                raw += chunk
-                # stop at newline (one JSON per line)
-                if b"\n" in raw:
-                    break
+                buffer += chunk
+                while b"\n" in buffer:
+                    line, buffer = buffer.split(b"\n", 1)
+                    if not line.strip():
+                        try:
+                            conn.sendall(b'{"status":"error","message":"empty request"}\n')
+                        except Exception:
+                            pass
+                        continue
 
-            if not raw.strip():
-                conn.send(b'{"status":"error","message":"empty request"}')
-                return
+                    try:
+                        payload = json.loads(line.decode("utf-8"))
+                    except Exception as e:
+                        try:
+                            conn.sendall((json.dumps({"status":"error","message":f"invalid json: {e}"}) + "\n").encode("utf-8"))
+                        except Exception:
+                            pass
+                        continue
 
-            try:
-                payload = json.loads(raw.decode("utf-8").strip())
-            except Exception as e:
-                conn.send(json.dumps({"status":"error","message":f"invalid json: {e}"}).encode("utf-8"))
-                return
+                    # Check for connection test action
+                    if payload.get("action") == "ping":
+                        try:
+                            conn.sendall(b'{"status":"success","message":"pong"}\n')
+                        except Exception:
+                            return
+                        continue
 
-            action = payload.get("action")
-            out = {"status":"error", "message":"unknown action"}
-            if action == "create_interface":
-                out = handle_create(payload.get("interface","wg0"))
-            elif action == "delete_interface":
-                out = handle_delete(payload.get("interface","wg0"))
-            elif action == "list_interfaces":
-                out = handle_list()
-            elif action == "list_peers":
-                out = peers_list(payload.get("interface","wg0"))
-            elif action == "add_peer":
-                if not payload.get("public_key") or not payload.get("allowed_ips"):
-                    out = {"status":"error","message":"public_key and allowed_ips required"}
-                else:
-                    out = handle_add(payload.get("interface","wg0"),
-                                     payload.get("public_key"),
-                                     payload.get("allowed_ips"))
-            elif action == "remove_peer":
-                if not payload.get("public_key"):
-                    out = {"status":"error","message":"public_key required"}
-                else:
-                    out = handle_remove(payload.get("interface","wg0"), payload.get("public_key"))
-            elif action == "generate_keypair":
-                out = handle_gen_keys()
-            else:
-                out = {"status":"error", "message": f"unknown action: {action}"}
+                    out = self._dispatch(payload)
+                    try:
+                        conn.sendall((json.dumps(out) + "\n").encode("utf-8"))
+                    except Exception:
+                        return
 
-            conn.send((json.dumps(out) + "\n").encode("utf-8"))
+            if buffer.strip():
+                try:
+                    payload = json.loads(buffer.decode("utf-8").strip())
+                    if payload.get("action") == "ping":
+                        conn.sendall(b'{"status":"success","message":"pong"}\n')
+                    else:
+                        out = self._dispatch(payload)
+                        conn.sendall((json.dumps(out) + "\n").encode("utf-8"))
+                except Exception:
+                    try:
+                        conn.sendall((json.dumps({"status":"error","message":"invalid or incomplete json (no newline)"}) + "\n").encode("utf-8"))
+                    except Exception:
+                        pass
+
         except Exception as e:
             try:
-                conn.send(json.dumps({"status":"error","message":f"server error: {e}"}).encode("utf-8"))
+                conn.sendall((json.dumps({"status":"error","message":f"server error: {e}"}) + "\n").encode("utf-8"))
             except Exception:
                 pass
         finally:
@@ -113,21 +143,65 @@ class SocketDaemon:
             except Exception:
                 pass
 
+    def _dispatch(self, payload: dict):
+        action = payload.get("action")
+        try:
+            if action == "create_interface":
+                return handle_create(payload.get("interface", "wg0"))
+            elif action == "delete_interface":
+                return handle_delete(payload.get("interface", "wg0"))
+            elif action == "list_interfaces":
+                return handle_list()
+            elif action == "list_peers":
+                return peers_list(payload.get("interface", "wg0"))
+            elif action == "add_peer":
+                if not payload.get("public_key") or not payload.get("allowed_ips"):
+                    return {"status": "error", "message": "public_key and allowed_ips required"}
+                return handle_add(payload.get("interface", "wg0"), payload.get("public_key"), payload.get("allowed_ips"))
+            elif action == "remove_peer":
+                if not payload.get("public_key"):
+                    return {"status": "error", "message": "public_key required"}
+                return handle_remove(payload.get("interface", "wg0"), payload.get("public_key"))
+            elif action == "generate_keypair":
+                return handle_gen_keys()
+            else:
+                return {"status": "error", "message": f"unknown action: {action}"}
+        except Exception as e:
+            return {"status": "error", "message": f"handler error: {e}"}
+
     def shutdown(self):
+        if not self.running:
+            return
         self.running = False
         try:
             if self.server:
-                self.server.close()
+                try:
+                    self.server.shutdown(socket.SHUT_RDWR)
+                except Exception:
+                    pass
+                try:
+                    self.server.close()
+                except Exception:
+                    pass
+                self.server = None
         except Exception:
             pass
+
         try:
             if os.path.exists(self.socket_path):
                 os.remove(self.socket_path)
         except Exception:
             pass
 
-def run(socket_path=None):
-    daemon = SocketDaemon(socket_path)
+        try:
+            self.executor.shutdown(wait=False)
+        except Exception:
+            pass
+
+
+def run(socket_path=None, permissive_for_nonroot=False):
+    daemon = SocketDaemon(socket_path, permissive_for_nonroot=permissive_for_nonroot)
+
     def _handle(sig, frame):
         print("Signal received, shutting down...")
         daemon.shutdown()
@@ -136,6 +210,7 @@ def run(socket_path=None):
     signal.signal(signal.SIGINT, _handle)
     signal.signal(signal.SIGTERM, _handle)
     daemon.start()
+
 
 if __name__ == "__main__":
     run()
