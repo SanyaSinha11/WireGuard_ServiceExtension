@@ -17,6 +17,56 @@
     </div>
 
     {% block scripts %}
+
     {% endblock %}
+    <script>
+    // Wait for DOM
+    document.addEventListener('DOMContentLoaded', () => {
+      const sidebar = document.getElementById('sidebar');
+      const toggleBtn = document.getElementById('toggleSidebar');
+      const backdrop = document.getElementById('backdrop');
+
+      if (!sidebar || !toggleBtn || !backdrop) {
+        console.error('Required elements not found (sidebar, toggleBtn or backdrop).');
+        return;
+      }
+
+      function openSidebar() {
+        sidebar.classList.remove('-translate-x-full');
+        sidebar.classList.add('translate-x-0');
+        backdrop.classList.remove('opacity-0', 'pointer-events-none');
+        backdrop.classList.add('opacity-100');
+        sidebar.setAttribute('aria-hidden', 'false');
+        toggleBtn.setAttribute('aria-expanded', 'true');
+        console.log('sidebar opened');
+      }
+
+      function closeSidebar() {
+        sidebar.classList.remove('translate-x-0');
+        sidebar.classList.add('-translate-x-full');
+        backdrop.classList.remove('opacity-100');
+        backdrop.classList.add('opacity-0', 'pointer-events-none');
+        sidebar.setAttribute('aria-hidden', 'true');
+        toggleBtn.setAttribute('aria-expanded', 'false');
+        console.log('sidebar closed');
+      }
+
+      toggleBtn.addEventListener('click', () => {
+        // Toggle based on presence of hidden class
+        if (sidebar.classList.contains('-translate-x-full')) openSidebar();
+        else closeSidebar();
+      });
+
+      // Click backdrop to close
+      backdrop.addEventListener('click', closeSidebar);
+
+      // Optional: close when pressing Escape
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !sidebar.classList.contains('-translate-x-full')) {
+          closeSidebar();
+        }
+      });
+    });
+  </script>
 </body>
 </html>

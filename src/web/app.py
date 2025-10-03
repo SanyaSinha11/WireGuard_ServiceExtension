@@ -3,7 +3,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from routers import server_config,api_proxy  # import the router
+from routers import server_config,api_proxy,peer_config  # import the router
 
 app = FastAPI()
 
@@ -20,6 +20,8 @@ async def read_root(request: Request):
 
 # Include server config router with prefix
 app.include_router(server_config.router, prefix="/server-config", tags=["Server Configurations"])
+app.include_router(peer_config.router, prefix="/peer-mng", tags=["Peer Management"])
+
 
 
 # Include API proxy router - this hides the backend API from frontend clients
