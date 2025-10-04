@@ -6,22 +6,29 @@ from api.clients.daemon_client import send
 router = APIRouter(prefix="/interface", tags=["Interface"])
 
 
+# ----------------------
+# Request Models
+# ----------------------
 class InterfaceCreateModel(BaseModel):
     """
     Model for creating a WireGuard interface.
-    Mirrors the main configuration fields for wg-quick.
     """
     ifname: str = "wg0"
     private_key: str
     listen_port: Optional[int] = None
     address: Optional[str] = None       # e.g., "10.0.0.1/24"
     mtu: Optional[int] = None
+    dns: Optional[str] = None
+    table: Optional[str] = None
 
 
 class InterfaceDeleteModel(BaseModel):
     ifname: str = "wg0"
 
 
+# ----------------------
+# API Routes
+# ----------------------
 @router.post("/create")
 def create_interface(payload: InterfaceCreateModel = Body(...)):
     """
@@ -33,7 +40,9 @@ def create_interface(payload: InterfaceCreateModel = Body(...)):
         "private_key": payload.private_key,
         "listen_port": payload.listen_port,
         "address": payload.address,
-        "mtu": payload.mtu
+        "mtu": payload.mtu,
+        "dns": payload.dns,
+        "table": payload.table
     })
 
 

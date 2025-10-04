@@ -99,12 +99,14 @@ class SocketDaemon:
                         payload = json.loads(line.decode("utf-8"))
                     except Exception as e:
                         try:
-                            conn.sendall((json.dumps({"status":"error","message":f"invalid json: {e}"}) + "\n").encode("utf-8"))
+                            conn.sendall(
+                                (json.dumps({"status": "error", "message": f"invalid json: {e}"}) + "\n").encode("utf-8")
+                            )
                         except Exception:
                             pass
                         continue
 
-                    # Check for connection test action
+                    # Connection test
                     if payload.get("action") == "ping":
                         try:
                             conn.sendall(b'{"status":"success","message":"pong"}\n')
@@ -128,13 +130,17 @@ class SocketDaemon:
                         conn.sendall((json.dumps(out) + "\n").encode("utf-8"))
                 except Exception:
                     try:
-                        conn.sendall((json.dumps({"status":"error","message":"invalid or incomplete json (no newline)"}) + "\n").encode("utf-8"))
+                        conn.sendall(
+                            (json.dumps({"status": "error", "message": "invalid or incomplete json (no newline)"}) + "\n").encode(
+                                "utf-8"
+                            )
+                        )
                     except Exception:
                         pass
 
         except Exception as e:
             try:
-                conn.sendall((json.dumps({"status":"error","message":f"server error: {e}"}) + "\n").encode("utf-8"))
+                conn.sendall((json.dumps({"status": "error", "message": f"server error: {e}"}) + "\n").encode("utf-8"))
             except Exception:
                 pass
         finally:
@@ -157,7 +163,14 @@ class SocketDaemon:
             elif action == "add_peer":
                 if not payload.get("public_key") or not payload.get("allowed_ips"):
                     return {"status": "error", "message": "public_key and allowed_ips required"}
-                return handle_add(payload.get("interface", "wg0"), payload.get("public_key"), payload.get("allowed_ips"))
+                return handle_add(
+                    ifname=payload.get("interface", "wg0"),
+                    public_key=payload.get("public_key"),
+                    allowed_ips=payload.get("allowed_ips"),
+                    preshared_key=payload.get("preshared_key"),
+                    endpoint=payload.get("endpoint"),
+                    persistent_keepalive=payload.get("persistent_keepalive"),
+                )
             elif action == "remove_peer":
                 if not payload.get("public_key"):
                     return {"status": "error", "message": "public_key required"}
