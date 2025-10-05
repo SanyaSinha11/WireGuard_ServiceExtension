@@ -21,10 +21,11 @@ class InterfaceCreateModel(BaseModel):
     dns: Optional[str] = None
     table: Optional[str] = None
 
-
 class InterfaceDeleteModel(BaseModel):
     ifname: str = "wg0"
 
+class InterfaceRestartModel(BaseModel):
+    name: str = "wg0"
 
 # ----------------------
 # API Routes
@@ -69,3 +70,13 @@ def list_interfaces():
       - WireGuard config
     """
     return send({"action": "list_interfaces", "detailed": True})
+
+@router.post("/restart")
+def restart_interface(payload: InterfaceRestartModel = Body(...)):
+    """
+    Restart a WireGuard interface (down and up again).
+    """
+    return send({
+        "action": "restart_interface",
+        "interface": payload.name
+    })

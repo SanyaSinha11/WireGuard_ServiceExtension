@@ -125,3 +125,18 @@ def list_interfaces(detailed: bool = True) -> Dict[str, Any]:
 
     except Exception as e:
         return {"status": "error", "message": f"list_interfaces failed: {e}"}
+
+def restart_interface(ifname: str = "wg0") -> Dict[str, Any]:
+    """
+    Restart a WireGuard interface safely.
+    Brings the interface down and back up.
+    """
+    down_res = run_cmd(["ip", "link", "set", "dev", ifname, "down"])
+    if down_res.get("status") != "success":
+        return {"status": "error", "message": f"Failed to bring down {ifname}: {down_res.get('stderr', '')}"}
+
+    up_res = run_cmd(["ip", "link", "set", "dev", ifname, "up"])
+    if up_res.get("status") != "success":
+        return {"status": "error", "message": f"Failed to bring up {ifname}: {up_res.get('stderr', '')}"}
+
+    return {"status": "success", "message": f"Interface {ifname} restarted successfully."}

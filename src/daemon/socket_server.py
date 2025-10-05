@@ -6,7 +6,7 @@ import signal
 import sys
 from concurrent.futures import ThreadPoolExecutor
 
-from daemon.handlers.interface_handler import handle_create, handle_delete, handle_list
+from daemon.handlers.interface_handler import handle_create, handle_delete, handle_list, handle_restart
 from daemon.handlers.peer_handler import handle_list as peers_list, handle_add, handle_remove
 from daemon.handlers.key_handler import handle_gen_keys
 
@@ -156,6 +156,8 @@ class SocketDaemon:
                 return handle_create(payload.get("interface", "wg0"))
             elif action == "delete_interface":
                 return handle_delete(payload.get("interface", "wg0"))
+            elif action == "restart_interface":
+                return handle_restart(payload.get("interface", "wg0"))
             elif action == "list_interfaces":
                 return handle_list()
             elif action == "list_peers":
