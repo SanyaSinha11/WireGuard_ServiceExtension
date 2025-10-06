@@ -1,4 +1,5 @@
 import os
+import shutil 
 import subprocess
 from typing import Dict, Any, Optional, List
 from daemon.utils.common import run_cmd
@@ -140,3 +141,32 @@ def restart_interface(ifname: str = "wg0") -> Dict[str, Any]:
         return {"status": "error", "message": f"Failed to bring up {ifname}: {up_res.get('stderr', '')}"}
 
     return {"status": "success", "message": f"Interface {ifname} restarted successfully."}
+
+
+def save_interface_config(ifname: str = "wg0") -> Dict[str, Any]:
+    """
+    Save current WireGuard interface configuration to a file.
+    Equivalent to `wg showconf <ifname> > /etc/wireguard/<ifname>.conf`.
+    """
+    if not shutil.which("wg"):
+        return {"status": "error", "message": "wg binary not found."}
+
+    conf_dir = "/etc/wireguard"
+    conf_path = os.path.join(conf_dir, f"{ifname}.conf")
+
+    try:
+        os.makedirs(conf_dir, exist_ok=True)
+        res = run_cmd(["wg", "showconf", ifname])
+
+        if res.get("status") != "success":
+            return {"status": "error", "message": f"Failed to get config for {ifname}: {res.get('stderr', '')}"}
+
+        with open(conf_path, "w") as f:
+            f.write(res["stdout"])
+
+        return {"status": "success", "message": f"Configuration for {ifname} saved to {conf_path}"}
+
+    except PermissionError:
+        return {"status": "error", "message": f"Permission denied writing to {conf_path}. Run as root."}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}

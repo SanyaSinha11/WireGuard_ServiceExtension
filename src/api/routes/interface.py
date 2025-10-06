@@ -27,6 +27,9 @@ class InterfaceDeleteModel(BaseModel):
 class InterfaceRestartModel(BaseModel):
     name: str = "wg0"
 
+class InterfaceSaveModel(BaseModel):
+    name: str = "wg0"
+
 # ----------------------
 # API Routes
 # ----------------------
@@ -78,5 +81,15 @@ def restart_interface(payload: InterfaceRestartModel = Body(...)):
     """
     return send({
         "action": "restart_interface",
+        "interface": payload.name
+    })
+
+@router.post("/save")
+def save_interface_config(payload: InterfaceSaveModel = Body(...)):
+    """
+    Save the live WireGuard interface configuration to /etc/wireguard/<ifname>.conf
+    """
+    return send({
+        "action": "save_interface_config",
         "interface": payload.name
     })
