@@ -1,8 +1,9 @@
 import os
-import shutil 
+import shutil
 import subprocess
 from typing import Dict, Any, Optional, List
 from daemon.utils.common import run_cmd
+
 
 def create_interface(
     ifname: str,
@@ -14,67 +15,95 @@ def create_interface(
     table: Optional[str] = None
 ) -> Dict[str, Any]:
     """
-    Create WireGuard interface with full configuration.
+    Create and configure a WireGuard interface with full options.
+    Includes key setup, address, MTU, DNS, and routing table assignment.
     """
+
+    # --- Sanity checks ---
+    if not ifname or not private_key:
+        return {"status": "error", "message": "Interface name and private_key are required."}
+
+    # --- Step 1: Create the WireGuard link ---
     res = run_cmd(["ip", "link", "add", ifname, "type", "wireguard"])
     if res["status"] != "success":
+        # Handle case where interface already exists
+        if "File exists" in res.get("stderr", ""):
+            return {"status": "error", "message": f"Interface {ifname} already exists."}
         return res
 
     key_file = f"/tmp/{ifname}_priv.key"
     try:
+        # --- Step 2: Write private key to temp file ---
         with open(key_file, "w") as f:
             f.write(private_key.strip())
 
-        # Set private key
+        # --- Step 3: Apply WireGuard settings ---
         res = run_cmd(["wg", "set", ifname, "private-key", key_file])
         if res["status"] != "success":
             return res
 
-        # Listen port
+        # --- Step 4: Set listen port ---
         if listen_port:
             res = run_cmd(["wg", "set", ifname, "listen-port", str(listen_port)])
             if res["status"] != "success":
                 return res
 
-        # Address
+        # --- Step 5: Assign IP address ---
         if address:
             res = run_cmd(["ip", "address", "add", address, "dev", ifname])
             if res["status"] != "success":
                 return res
 
-        # MTU
+        # --- Step 6: Set MTU ---
         if mtu:
             res = run_cmd(["ip", "link", "set", "dev", ifname, "mtu", str(mtu)])
             if res["status"] != "success":
                 return res
 
-        # Bring interface up
+        # --- Step 7: Set DNS (optional, system dependent) ---
+        # This doesn't modify wg config directly, but can be useful for resolvconf integration.
+        if dns:
+            resolv_conf = f"/etc/resolv.conf"
+            try:
+                with open(resolv_conf, "a") as f:
+                    f.write(f"\n# Added by wg-daemon for {ifname}\nnameserver {dns}\n")
+            except PermissionError:
+                pass  # Ignore DNS write errors if not root
+
+        # --- Step 8: Bring interface up ---
         res = run_cmd(["ip", "link", "set", "up", "dev", ifname])
         if res["status"] != "success":
             return res
 
-        return {"status": "success", "message": f"Interface {ifname} created with configuration."}
+        # --- Step 9: Optionally assign table for routing ---
+        if table:
+            run_cmd(["ip", "rule", "add", "from", address.split("/")[0], "table", table])
+
+        return {"status": "success", "message": f"Interface {ifname} created successfully."}
+
     finally:
         if os.path.exists(key_file):
             os.remove(key_file)
 
 
 def delete_interface(ifname: str) -> Dict[str, Any]:
+    """Delete a WireGuard interface."""
     return run_cmd(["ip", "link", "del", ifname])
 
 
 def list_interfaces(detailed: bool = True) -> Dict[str, Any]:
     """
-    List WireGuard interfaces with full state, MTU, addresses, and wg config.
+    List WireGuard interfaces with full details:
+    - Interface name, state, MTU
+    - Assigned addresses
+    - WireGuard configuration
     """
     try:
         from pyroute2 import IPRoute, NetlinkError
-        import shutil
-
         ipr = IPRoute()
         interfaces: List[Dict[str, Any]] = []
 
-        # Get all WireGuard interfaces from wg binary if available
+        # Get all WireGuard interfaces via wg binary
         wg_interfaces: List[str] = []
         if shutil.which("wg"):
             try:
@@ -84,7 +113,7 @@ def list_interfaces(detailed: bool = True) -> Dict[str, Any]:
             except Exception:
                 pass
 
-        # Iterate through all links via pyroute2
+        # Iterate through all system links
         for link in ipr.get_links():
             ifname = link.get_attr("IFLA_IFNAME")
             linkinfo = link.get_attr("IFLA_LINKINFO")
@@ -96,19 +125,18 @@ def list_interfaces(detailed: bool = True) -> Dict[str, Any]:
                 "index": link["index"],
                 "ifname": ifname,
                 "state": link.get_attr("IFLA_OPERSTATE") or "DOWN",
-                "mtu": link.get_attr("IFLA_MTU")
+                "mtu": link.get_attr("IFLA_MTU"),
+                "addresses": []
             }
 
             # Addresses
-            addresses: List[str] = []
             try:
                 for addr in ipr.get_addr(index=link["index"]):
                     ip = addr.get_attr("IFA_ADDRESS")
                     prefix = addr["prefixlen"]
-                    addresses.append(f"{ip}/{prefix}")
+                    iface["addresses"].append(f"{ip}/{prefix}")
             except NetlinkError:
                 pass
-            iface["addresses"] = addresses
 
             # WireGuard config
             if detailed and ifname in wg_interfaces:
@@ -127,11 +155,9 @@ def list_interfaces(detailed: bool = True) -> Dict[str, Any]:
     except Exception as e:
         return {"status": "error", "message": f"list_interfaces failed: {e}"}
 
+
 def restart_interface(ifname: str = "wg0") -> Dict[str, Any]:
-    """
-    Restart a WireGuard interface safely.
-    Brings the interface down and back up.
-    """
+    """Restart a WireGuard interface safely."""
     down_res = run_cmd(["ip", "link", "set", "dev", ifname, "down"])
     if down_res.get("status") != "success":
         return {"status": "error", "message": f"Failed to bring down {ifname}: {down_res.get('stderr', '')}"}
@@ -145,8 +171,8 @@ def restart_interface(ifname: str = "wg0") -> Dict[str, Any]:
 
 def save_interface_config(ifname: str = "wg0") -> Dict[str, Any]:
     """
-    Save current WireGuard interface configuration to a file.
-    Equivalent to `wg showconf <ifname> > /etc/wireguard/<ifname>.conf`.
+    Save current WireGuard interface configuration to /etc/wireguard/<ifname>.conf.
+    Equivalent to: wg showconf <ifname> > /etc/wireguard/<ifname>.conf
     """
     if not shutil.which("wg"):
         return {"status": "error", "message": "wg binary not found."}

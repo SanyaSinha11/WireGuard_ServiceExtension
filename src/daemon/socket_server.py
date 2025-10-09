@@ -153,15 +153,15 @@ class SocketDaemon:
         action = payload.get("action")
         try:
             if action == "create_interface":
-                return handle_create(payload.get("interface", "wg0"))
+                return handle_create(payload)
             elif action == "delete_interface":
-                return handle_delete(payload.get("interface", "wg0"))
+                return handle_delete(payload.get("ifname", "wg0"))
             elif action == "restart_interface":
-                return handle_restart(payload.get("interface", "wg0"))
+                return handle_restart(payload.get("ifname", "wg0"))
             elif action == "list_interfaces":
                 return handle_list()
             elif action == "save_interface_config":
-                return handle_save(payload.get("interface", "wg0"))
+                return handle_save(payload.get("ifname", "wg0"))
             elif action == "list_peers":
                 return peers_list(payload.get("interface", "wg0"))
             elif action == "add_peer":
